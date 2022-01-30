@@ -216,3 +216,141 @@ function addDepartment() {
 	viewDepartments();
 	});
 }
+
+//--------add role
+function addRole() {
+	var sql = `SELECT * FROM department`;
+
+	connection.sql(sql, function (err, res) {
+	if (err) throw err;
+	// Select department for role
+	const departmentChoices = res.map(({ id, title }) => ({
+	value: id,
+	name: `${id} ${title}`,
+	}));
+
+	inquirer
+		.prompt(prompt.insertRole(departmentChoices))
+		.then(function (answer) {
+		var sql = `INSERT INTO role SET ?`;
+		// Insert Title, Salary and Department into Role Array
+				connection.sql(
+					sql,
+					{
+						title: answer.roleTitle,
+						salary: answer.roleSalary,
+						department_id: answer.departmentId,
+					},
+					function (err, res) {
+						if (err) throw err;
+						console.log("\n" + res.affectedRows + " role created");
+
+		viewRoles();},
+	   );
+	});
+});
+}
+
+//------------------------------------------------add employee
+const addEmployee = () => {
+	//pick Employee's Department
+	let departmentArray = [];
+	connection.sql(`SELECT * FROM department`, (err, res) => {
+	if (err) throw err;
+
+	res.forEach((element) => {
+	departmentArray.push(`${element.id} ${element.name}`);
+	});
+
+	// pick Employee's Role
+	let roleArray = [];
+	connection.sql(`SELECT id, title FROM roles`, (err, res) => {
+	if (err) throw err;
+
+	res.forEach((element) => {
+	roleArray.push(`${element.id} ${element.title}`);
+	});
+
+	// pick Employee's Manager
+	let managerArray = [];
+	connection
+    .sql(`SELECT id, first_name, last_name FROM employee`,
+        (err, res) => {
+		if (err) throw err;
+		res.forEach((element) => {
+		managerArray.push(
+		`${element.id} ${element.first_name} ${element.last_name}`,);
+		});
+
+	// Create New Employee
+	inquirer
+		.prompt(prompt.insertEmployee(departmentArray, roleArray, managerArray),)
+		.then((response) => {
+		// Insert elements into employee array
+		let roleCode = parseInt(response.role);
+		let managerCode = parseInt(response.manager);
+		connection.sql("INSERT INTO employee SET ?",
+			{
+			first_name: response.firstName,
+			last_name: response.lastName,
+			role_id: roleCode,
+			manager_id: managerCode,
+			},
+			(err, res) => {
+			if (err) throw err;
+			console.log("\n" + res.affectedRows + " employee created");	
+		viewEmployee();
+							},
+						);
+					});
+				},
+			);
+		});
+	});
+};
+
+//-----------------------------update role
+const updateEmployee = () => {
+// Select Employee
+    let employees = [];
+	connection.sql(
+	`SELECT id, first_name, last_name
+     FROM employee`,
+	(err, res) => {
+	if (err) throw err;
+
+	res.forEach((element) => {	employees.push(
+        `${element.id} ${element.first_name} ${element.last_name}`,
+			);
+			});
+        
+// pick new role
+    let job = [];
+	connection.sql(`SELECT id, title FROM roles`, (err, res) => {
+	if (err) throw err;
+
+				res.forEach((element) => {
+					job.push(`${element.id} ${element.title}`);
+				});
+
+				inquirer.prompt(prompt.updateRole(employees, job)).then((response) => {
+					// Update Employee with Chosen Role
+					let idCode = parseInt(response.update);
+					let roleCode = parseInt(response.role);
+					connection.sql(
+						`UPDATE employee SET role_id = ${roleCode} WHERE id = ${idCode}`,
+						(err, res) => {
+							if (err) throw err;
+
+							console.log(
+								"\n" + "\n" + res.affectedRows + " Updated successfully!",
+							);
+							console.log("\n<<<<<<<<<<<<<<<<<<<< ⛔ >>>>>>>>>>>>>>>>>>>>\n");
+							firstPrompt();
+						},
+					);
+				});
+			});
+		},
+	);
+};
