@@ -1,12 +1,9 @@
-INSERT INTO department (name)
+INSERT INTO department (title)
 VALUES 
-("farming"),
-("fishing"),
-("hunting"),
-("kitchen"),
-("butcher");
+("Mission"),
+("Kitchen");
 
-INSERT INTO role (title, salary, department_id)
+INSERT INTO roles (title, salary, department_id)
 VALUE 
 ("farmer", 90000.00, 2),
 ("fisher", 60000.00, 3),

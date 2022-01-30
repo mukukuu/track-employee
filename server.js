@@ -1,57 +1,24 @@
 const express = require('express');
 const db = require('./db/connection');
-const inquire = require('inquire');
-require("console.table");
+const inquirer = require('inquirer');
+const CTable = require('console.table');
+const questions = require('./lib/questions');
 
+require('dotenv').config();
 
+ const prompt = require('./lib/questions')
+ startApp();
 
-
-// const PORT = process.env.PORT || 3001;
-
-const app = express();
-
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-app.use(express.static('public'));
-
-
-
-// //default response for erequest errors
-// app.use((req, res) => {
-//     res.status(404).end();
-// });
-
-//start server after db connection
- db.connect(err => {
-     if (err) throw err;
-     console.log('Database connected')
-
-//     app.listen(PORT, () => {
-//     console.log(`API server now on mport ${PORT}`);
-// });
- });
-
+ function startApp() {
+ }
 
  //multiple choice question for user's action
-const questions = async () => {
+function questionPrompts() {
+  inquirer  
+    .prompt(prompt.startApp)
+    .then(function ({ action }) {
 
-    await inquirer
-    .prompt({
-       name: 'actions',
-       type: 'list',
-       message: 'Menu',
-       choices:[
-           "view all department",
-           "view all roles",
-           "view all employees",
-           "add a department",
-           "add a role",
-           "add an employee",
-           "update an employee role",
-       ],
-   })
-    .then((answer) => {
-        switch (answer.action) {
+        switch (action) {
             case "view all department":
                 viewDepartment.showDepartment(questions);
                 break;
@@ -75,8 +42,40 @@ const questions = async () => {
                 updateEmployee.updateRole(questions);
                 break;
         }
-    })
+    });
    };
+questionPrompts();
 
-questions();
+//show departments
+function viewDepartments() {
+	var query = "SELECT * FROM department";
+	connection.query(query, function (err, res) {
+		if (err) throw err;
+		console.log(`\nDEPARTMENTS:\n`);
+		res.forEach((department) => {
+			console.log(`ID: ${department.id} | ${department.name} Department`);
+		});
+		
+		startAppt();
+	});
+}
+
+//show roles
+function viewRoles() {
+	var query = "SELECT * FROM role";
+	connection.query(query, function (err, res) {
+		if (err) throw err;
+		console.log(`\nROLES:\n`);
+		res.forEach((role) => {
+			console.log(
+				`ID: ${role.id} | Title: ${role.title}\n Salary: ${role.salary}\n`,
+			);
+		});
+		
+		startApp();
+	});
+}
+
+
+
 
