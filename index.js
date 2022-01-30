@@ -328,29 +328,157 @@ const updateEmployee = () => {
     let job = [];
 	connection.sql(`SELECT id, title FROM roles`, (err, res) => {
 	if (err) throw err;
+		res.forEach((element) => {
+		job.push(`${element.id} ${element.title}`);
+		});
 
-				res.forEach((element) => {
-					job.push(`${element.id} ${element.title}`);
-				});
+	inquirer
+    .prompt(prompt.updateRole(employees, job))
+    .then((response) => {
+		// change Role
+		let idCode = parseInt(response.update);
+		let roleCode = parseInt(response.role);
+		connection.sql(
+		`UPDATE employee SET role_id = ${roleCode} WHERE id = ${idCode}`,
+		(err, res) => {
+		if (err) throw err;
 
-				inquirer.prompt(prompt.updateRole(employees, job)).then((response) => {
-					// Update Employee with Chosen Role
-					let idCode = parseInt(response.update);
-					let roleCode = parseInt(response.role);
-					connection.sql(
-						`UPDATE employee SET role_id = ${roleCode} WHERE id = ${idCode}`,
-						(err, res) => {
-							if (err) throw err;
+		console.log("\n" + "\n" + res.affectedRows + " Updated successfully!",);
+	
+    startApp();
+	},
+   );
+  });
+ });
+},
+);
+};
 
-							console.log(
-								"\n" + "\n" + res.affectedRows + " Updated successfully!",
-							);
-							console.log("\n<<<<<<<<<<<<<<<<<<<< ⛔ >>>>>>>>>>>>>>>>>>>>\n");
-							firstPrompt();
-						},
-					);
+//================================update manager
+const updateEmployeeManager = () => {
+// pick a member to update
+	let employees = [];
+	connection.sql(
+    `SELECT id, first_name, last_name
+     FROM employee`,
+	 (err, res) => {
+	 res.forEach((element) => {
+// for each ID and Name push into array
+	employees.push(
+	`${element.id} ${element.first_name} ${element.last_name}`,);
+    });
+			
+// pick employee's new manager
+	inquirer
+    .prompt(prompt.updateManager(employees))
+    .then((answer) => {
+// parseInt prompt answers
+	let idCode = parseInt(answer.update);
+	let managerCode = parseInt(answer.manager);
+	connection.sql(
+// replace employee's mgr_ID with emp_ID of new manager
+	`UPDATE employee SET manager_id = ${managerCode} WHERE id = ${idCode}`,
+	(err, res) => {
+	if (err) throw err;
+
+	console.log("\n" + "\n" + res.affectedRows + " Updated successfully!",);
+						
+	startApp();
+	},
+	);
+   });
+  },
+);
+};
+
+//======================delete employee
+function deleteEmployee() {
+	console.log("Delete employee");
+	var sql = `SELECT e.id, e.first_name, e.last_name
+               FROM employee e`;
+
+	connection.sql(sql, function (err, res) {
+		if (err) throw err;
+		// pick Employee 
+		const deleteEmployeeChoices = res.map(({ id, first_name, last_name }) => ({
+			value: id,
+			name: `${id} ${first_name} ${last_name}`,
+		}));
+
+		inquirer
+		    .prompt(prompt.deleteEmployeePrompt(deleteEmployeeChoices))
+			.then(function (answer) {
+			var sql = `DELETE FROM employee WHERE ?`;
+			// remove employee from the db
+			connection.sql(sql, { id: answer.employeeId }, function (err, res) {
+			if (err) throw err;
+
+			console.log("\n" + res.affectedRows + " employee deleted");
+			
+
+			startApp();
+		});
+	  });
+	});
+}
+
+//=========================delete department
+function deleteDepartment() {
+	console.log("\ndelete Department:\n");
+
+	var sql = `SELECT e.id, e.title FROM department e`;
+
+	connection.sql(sql, function (err, res) {
+		if (err) throw err;
+		// Select Department to Remove
+		const deleteDepartmentChoices = res.map(({ id, title }) => ({
+			value: id,
+			name: `${id} ${title}`,
+		}));
+
+		inquirer
+			.prompt(prompt.deleteDepartmentPrompt(deleteDepartmentChoices))
+			.then(function (answer) {
+			var sql = `DELETE FROM department WHERE ?`;
+			// delete item from the db
+			connection.sql(sql, { id: answer.departmentId },
+            function (err,res,) {
+					if (err) throw err;
+
+					console.log("\n" + res.affectedRows + " department deleted");
+					
+					viewDepartments();
 				});
 			});
-		},
-	);
-};
+	});
+}
+
+//======================delete role
+function deleteRole() {
+	console.log("Deleting a roles");
+
+	var sql = `SELECT e.id, e.title, e.salary, e.department_id FROM roles e`;
+
+	connection.sql(sql, function (err, res) {
+	if (err) throw err;
+	// pick a role 
+	const deleteRoleChoices = res.map(({ id, title }) => ({
+			value: id,
+			name: `${id} ${title}`,
+		    }));
+
+	inquirer
+		.prompt(prompt.deleteRolePrompt(deleteRoleChoices))
+		.then(function (answer) {
+		var sql = `DELETE FROM roles WHERE ?`;
+		// delete item from the db
+		connection.sql(sql, { id: answer.roleId }, function (err, res) {
+		if (err) throw err;
+
+		console.log("\n" + res.affectedRows + " role deleted");
+
+	viewRoles();
+	});
+	});
+  });
+}
