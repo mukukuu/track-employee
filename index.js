@@ -1,19 +1,19 @@
 const inquirer = require('inquirer');
+
 const table = require('console.table');
 const connection = require('./db/connection');
-
 
  const prompt = require('./lib/questions')
 require('console.table');
 
+
  startApp();
-
+  //init app
  function startApp() {
- 
+console.log('start');
 
- //multiple choice question for user's action 
   inquirer  
-    .prompt(prompt.startApp)
+    .prompt(prompt.prompt)
     .then(function ({ action }) {
 
         switch (action) {
@@ -27,10 +27,10 @@ require('console.table');
             case "view all employees":
                 showEmployee();
                 break;
-            case "view employees by manager":
+            case "View Employees by Manager":
                 viewEmployeeByManager();
                 break;
-            case "view employee by department":
+            case "View Employees by Department":
                 viewEmployeeByDpt();
                 break;
 
@@ -48,53 +48,55 @@ require('console.table');
             case "update an employee role":
                 updateEmployee();
                 break;
-            case "update employee manager":
+            case "Update employee manager":
                 updateEmployeeManager();
                 break;
         //delete function calls
-            case "delete employee":
+            case "delete Employee":
                 deleteEmployee();
                 break;
-            case "delete role":
+            case "delete Role":
                 deleteRole();
                 break;
-            case "delete department":
+            case "delete Department":
                 deleteDepartment();
                 break;
         //exit function call
-            case "EXIT":
+            case "exit":
                 console.log('bye')
                 connection.end();
                 break;
         }
     });
-   };
+};
 
 //-----------------show departments
-viewDepartments();
+
 function viewDepartments() {
 	var sql = "SELECT * FROM department";
-	connection.sql(sql, function (err, res) {
+	connection.query(sql, function (err, res) {
 		if (err) throw err;
 		console.log(`\nDEPARTMENTS:\n`);
-		res.forEach((department) => {
-		console.log(`ID: ${department.id} | ${department.name} Department`);
-		});
-		startAppt();
+		console.table(res);
+		// res.forEach((department) => {
+		// console.log(`ID: ${department.id} | ${department.title} Department`);
+		// });
+		startApp();
 	});
 }
 
 //-------------------show roles
 function viewRoles() {
 	var sql = "SELECT * FROM roles";
-	connection.sql(sql, function (err, res) {
+	connection.query(sql, function (err, res) {
 		if (err) throw err;
-		cconsole.log(`\nROLES:\n`);
-		res.forEach((role) => {
-		console.log(
-		`ID: ${role.id} | Title: ${role.title}\n Salary: ${role.salary}\n`,
-		);
-		});
+		console.log(`\nROLES:\n`);
+		console.table(res);
+		// res.forEach((role) => {
+		// console.log(
+		// `ID: ${role.id} | Title: ${role.title}\n Salary: ${role.salary}\n`,
+		// );
+		// });
 		startApp();
 	});
 }
@@ -110,7 +112,7 @@ function showEmployee() {
   LEFT JOIN employee m
 	ON m.id = e.manager_id`;
 
-	connection.sql(sql, function (err, res) {
+	connection.query(sql, function (err, res) {
 		if (err) throw err;
 		console.table(res);
 		startApp();
@@ -119,14 +121,14 @@ function showEmployee() {
 
 //---------------show employee by manager
 function viewEmployeeByManager() {
-	var sql = `SELECT e.manager_id, CONCAT(m.first_name, ' ', m.last_name) AS manager FROM employee e LEFT JOIN role r
+	var sql = `SELECT e.manager_id, CONCAT(m.first_name, ' ', m.last_name) AS manager FROM employee e LEFT JOIN roles r
 	ON e.role_id = r.id
   	LEFT JOIN department d
   	ON d.id = r.department_id
   	LEFT JOIN employee m
 	ON m.id = e.manager_id GROUP BY e.manager_id`;
 
-	connection.sql(sql, function (err, res) {
+	connection.query(sql, function (err, res) {
 		if (err) throw err;
 
 		// Select manager to view employee
@@ -138,7 +140,7 @@ function viewEmployeeByManager() {
 			}));
 
 		inquirer
-			.prompt(prompt.viewManagerPrompt(managerChoices))
+			.prompt(prompt.viewEmployeeByManager(managerChoices))
 			.then(function (answer) {
 				var sql = `SELECT e.id, e.first_name, e.last_name, r.title, CONCAT(m.first_name, ' ', m.last_name) AS manager
 			FROM employee e
@@ -150,7 +152,7 @@ function viewEmployeeByManager() {
 			ON m.id = e.manager_id
 			WHERE m.id = ?`;
 
-		   connection.sql(sql, answer.managerId, function (err, res) {
+		   connection.query(sql, answer.managerId, function (err, res) {
 			if (err) throw err;
 			console.table("\nManager's subordinates:", res);
 
@@ -165,7 +167,7 @@ function viewEmployeeByManager() {
 function viewEmployeeByDpt() {
 	console.log("View employees by department\n");
 
-	var sql = `SELECT d.id, d.name
+	var sql = `SELECT d.id, d.title
 	FROM employee e
 	LEFT JOIN roles r
 	ON e.role_id = r.id
@@ -173,7 +175,7 @@ function viewEmployeeByDpt() {
 	ON d.id = r.department_id
 	GROUP BY d.id, d.title`;
 
-	connection.sql(sql, function (err, res) {
+	connection.query(sql, function (err, res) {
 		if (err) throw err;
 
 		// Select department
@@ -183,7 +185,7 @@ function viewEmployeeByDpt() {
 		}));
 
 		inquirer
-			.prompt(prompt.departmentPrompt(departmentChoices))
+			.prompt(prompt.viewEmployeeByDpt(departmentChoices))
 			.then(function (answer) {
 				var sql = `SELECT e.id, e.first_name, e.last_name, r.title, d.title AS department 
 			FROM employee e
@@ -193,7 +195,7 @@ function viewEmployeeByDpt() {
 			ON d.id = r.department_id
 			WHERE d.id = ?`;
 
-			connection.sql(sql, answer.departmentId, function (err, res) {
+			connection.query(sql, answer.departmentId, function (err, res) {
 			if (err) throw err;
 			console.table("\nDepartment Rota: ", res);
 			startApp();
@@ -206,7 +208,7 @@ function viewEmployeeByDpt() {
 function addDepartment() {
 	inquirer.prompt(prompt.insertDepartment).then(function (answer) {
 	var sql = "INSERT INTO department (title) VALUES ( ? )";
-	connection.sql(sql, answer.department, function (err, res) {
+	connection.query(sql, answer.department, function (err, res) {
 	if (err) throw err;
 	console.log(
 	`added department: ${answer.department.toUpperCase()}.`,
@@ -221,7 +223,7 @@ function addDepartment() {
 function addRole() {
 	var sql = `SELECT * FROM department`;
 
-	connection.sql(sql, function (err, res) {
+	connection.query(sql, function (err, res) {
 	if (err) throw err;
 	// Select department for role
 	const departmentChoices = res.map(({ id, title }) => ({
@@ -232,9 +234,9 @@ function addRole() {
 	inquirer
 		.prompt(prompt.insertRole(departmentChoices))
 		.then(function (answer) {
-		var sql = `INSERT INTO role SET ?`;
+		var sql = `INSERT INTO roles SET ?`;
 		// Insert Title, Salary and Department into Role Array
-				connection.sql(
+				connection.query(
 					sql,
 					{
 						title: answer.roleTitle,
@@ -255,7 +257,7 @@ function addRole() {
 const addEmployee = () => {
 	//pick Employee's Department
 	let departmentArray = [];
-	connection.sql(`SELECT * FROM department`, (err, res) => {
+	connection.query(`SELECT * FROM department`, (err, res) => {
 	if (err) throw err;
 
 	res.forEach((element) => {
@@ -264,7 +266,7 @@ const addEmployee = () => {
 
 	// pick Employee's Role
 	let roleArray = [];
-	connection.sql(`SELECT id, title FROM roles`, (err, res) => {
+	connection.query(`SELECT id, title FROM roles`, (err, res) => {
 	if (err) throw err;
 
 	res.forEach((element) => {
@@ -274,7 +276,7 @@ const addEmployee = () => {
 	// pick Employee's Manager
 	let managerArray = [];
 	connection
-    .sql(`SELECT id, first_name, last_name FROM employee`,
+    .query(`SELECT id, first_name, last_name FROM employee`,
         (err, res) => {
 		if (err) throw err;
 		res.forEach((element) => {
@@ -284,12 +286,12 @@ const addEmployee = () => {
 
 	// Create New Employee
 	inquirer
-		.prompt(prompt.insertEmployee(departmentArray, roleArray, managerArray),)
+		.prompt(prompt.addEmployee(departmentArray, roleArray, managerArray),)
 		.then((response) => {
 		// Insert elements into employee array
 		let roleCode = parseInt(response.role);
 		let managerCode = parseInt(response.manager);
-		connection.sql("INSERT INTO employee SET ?",
+		connection.query("INSERT INTO employee SET ?",
 			{
 			first_name: response.firstName,
 			last_name: response.lastName,
@@ -299,7 +301,7 @@ const addEmployee = () => {
 			(err, res) => {
 			if (err) throw err;
 			console.log("\n" + res.affectedRows + " employee created");	
-		viewEmployee();
+		startApp();
 							},
 						);
 					});
@@ -313,7 +315,7 @@ const addEmployee = () => {
 const updateEmployee = () => {
 // Select Employee
     let employees = [];
-	connection.sql(
+	connection.query(
 	`SELECT id, first_name, last_name
      FROM employee`,
 	(err, res) => {
@@ -326,7 +328,7 @@ const updateEmployee = () => {
         
 // pick new role
     let job = [];
-	connection.sql(`SELECT id, title FROM roles`, (err, res) => {
+	connection.query(`SELECT id, title FROM roles`, (err, res) => {
 	if (err) throw err;
 		res.forEach((element) => {
 		job.push(`${element.id} ${element.title}`);
@@ -338,7 +340,7 @@ const updateEmployee = () => {
 		// change Role
 		let idCode = parseInt(response.update);
 		let roleCode = parseInt(response.role);
-		connection.sql(
+		connection.query(
 		`UPDATE employee SET role_id = ${roleCode} WHERE id = ${idCode}`,
 		(err, res) => {
 		if (err) throw err;
@@ -358,7 +360,7 @@ const updateEmployee = () => {
 const updateEmployeeManager = () => {
 // pick a member to update
 	let employees = [];
-	connection.sql(
+	connection.query(
     `SELECT id, first_name, last_name
      FROM employee`,
 	 (err, res) => {
@@ -375,7 +377,7 @@ const updateEmployeeManager = () => {
 // parseInt prompt answers
 	let idCode = parseInt(answer.update);
 	let managerCode = parseInt(answer.manager);
-	connection.sql(
+	connection.query(
 // replace employee's mgr_ID with emp_ID of new manager
 	`UPDATE employee SET manager_id = ${managerCode} WHERE id = ${idCode}`,
 	(err, res) => {
@@ -397,7 +399,7 @@ function deleteEmployee() {
 	var sql = `SELECT e.id, e.first_name, e.last_name
                FROM employee e`;
 
-	connection.sql(sql, function (err, res) {
+	connection.query(sql, function (err, res) {
 		if (err) throw err;
 		// pick Employee 
 		const deleteEmployeeChoices = res.map(({ id, first_name, last_name }) => ({
@@ -406,11 +408,11 @@ function deleteEmployee() {
 		}));
 
 		inquirer
-		    .prompt(prompt.deleteEmployeePrompt(deleteEmployeeChoices))
+		    .prompt(prompt.deleteEmployee(deleteEmployeeChoices))
 			.then(function (answer) {
 			var sql = `DELETE FROM employee WHERE ?`;
 			// remove employee from the db
-			connection.sql(sql, { id: answer.employeeId }, function (err, res) {
+			connection.query(sql, { id: answer.employeeId }, function (err, res) {
 			if (err) throw err;
 
 			console.log("\n" + res.affectedRows + " employee deleted");
@@ -428,7 +430,7 @@ function deleteDepartment() {
 
 	var sql = `SELECT e.id, e.title FROM department e`;
 
-	connection.sql(sql, function (err, res) {
+	connection.query(sql, function (err, res) {
 		if (err) throw err;
 		// Select Department to Remove
 		const deleteDepartmentChoices = res.map(({ id, title }) => ({
@@ -437,17 +439,17 @@ function deleteDepartment() {
 		}));
 
 		inquirer
-			.prompt(prompt.deleteDepartmentPrompt(deleteDepartmentChoices))
+			.prompt(prompt.deleteDepartment(deleteDepartmentChoices))
 			.then(function (answer) {
 			var sql = `DELETE FROM department WHERE ?`;
 			// delete item from the db
-			connection.sql(sql, { id: answer.departmentId },
+			connection.query(sql, { id: answer.departmentId },
             function (err,res,) {
 					if (err) throw err;
 
 					console.log("\n" + res.affectedRows + " department deleted");
 					
-					viewDepartments();
+					startApp();
 				});
 			});
 	});
@@ -459,7 +461,7 @@ function deleteRole() {
 
 	var sql = `SELECT e.id, e.title, e.salary, e.department_id FROM roles e`;
 
-	connection.sql(sql, function (err, res) {
+	connection.query(sql, function (err, res) {
 	if (err) throw err;
 	// pick a role 
 	const deleteRoleChoices = res.map(({ id, title }) => ({
@@ -468,16 +470,16 @@ function deleteRole() {
 		    }));
 
 	inquirer
-		.prompt(prompt.deleteRolePrompt(deleteRoleChoices))
+		.prompt(prompt.deleteRole(deleteRoleChoices))
 		.then(function (answer) {
 		var sql = `DELETE FROM roles WHERE ?`;
 		// delete item from the db
-		connection.sql(sql, { id: answer.roleId }, function (err, res) {
+		connection.query(sql, { id: answer.roleId }, function (err, res) {
 		if (err) throw err;
 
 		console.log("\n" + res.affectedRows + " role deleted");
 
-	viewRoles();
+	startApp();
 	});
 	});
   });
